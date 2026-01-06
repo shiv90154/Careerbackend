@@ -1,2 +1,2 @@
 <?php
-echo "API WORKING";
+echo password_hash("Student@123", PASSWORD_BCRYPT);

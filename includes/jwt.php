@@ -1,70 +1,49 @@
 <?php
-require_once 'config.php';
+class JWT {
 
-use Firebase\JWT\JWT;
-use Firebase\JWT\Key;
+    public static function encode($payload, $secret, $algo = 'HS256') {
+        $header = json_encode(['typ' => 'JWT', 'alg' => $algo]);
+        $payload = json_encode($payload);
 
-class JWTHandler {
-    private static $secret_key = JWT_SECRET;
-    private static $algorithm = JWT_ALGORITHM;
+        $base64UrlHeader = self::base64UrlEncode($header);
+        $base64UrlPayload = self::base64UrlEncode($payload);
 
-    public static function generateToken($user_id, $role, $email) {
-        $issued_at = time();
-        $expiration_time = $issued_at + (60 * 60 * 24); // 24 hours
-
-        $payload = array(
-            "iat" => $issued_at,
-            "exp" => $expiration_time,
-            "iss" => BASE_URL,
-            "data" => array(
-                "user_id" => $user_id,
-                "role" => $role,
-                "email" => $email
-            )
+        $signature = hash_hmac(
+            'sha256',
+            $base64UrlHeader . "." . $base64UrlPayload,
+            $secret,
+            true
         );
 
-        return JWT::encode($payload, self::$secret_key, self::$algorithm);
+        $base64UrlSignature = self::base64UrlEncode($signature);
+
+        return $base64UrlHeader . "." . $base64UrlPayload . "." . $base64UrlSignature;
     }
 
-    public static function validateToken($token) {
-        try {
-            $decoded = JWT::decode($token, new Key(self::$secret_key, self::$algorithm));
-            return (array) $decoded->data;
-        } catch (Exception $e) {
-            return false;
+    public static function decode($jwt, $secret) {
+        $parts = explode('.', $jwt);
+        if (count($parts) !== 3) {
+            throw new Exception('Invalid token');
         }
+
+        [$header, $payload, $signature] = $parts;
+
+        $validSignature = self::base64UrlEncode(
+            hash_hmac('sha256', $header . "." . $payload, $secret, true)
+        );
+
+        if ($signature !== $validSignature) {
+            throw new Exception('Invalid signature');
+        }
+
+        return json_decode(self::base64UrlDecode($payload), true);
     }
 
-    public static function getAuthorizationHeader() {
-        $headers = null;
-        
-        if (isset($_SERVER['Authorization'])) {
-            $headers = trim($_SERVER['Authorization']);
-        } elseif (isset($_SERVER['HTTP_AUTHORIZATION'])) {
-            $headers = trim($_SERVER['HTTP_AUTHORIZATION']);
-        } elseif (function_exists('apache_request_headers')) {
-            $requestHeaders = apache_request_headers();
-            $requestHeaders = array_combine(
-                array_map('ucwords', array_keys($requestHeaders)),
-                array_values($requestHeaders)
-            );
-            if (isset($requestHeaders['Authorization'])) {
-                $headers = trim($requestHeaders['Authorization']);
-            }
-        }
-        
-        return $headers;
+    private static function base64UrlEncode($data) {
+        return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
     }
 
-    public static function getBearerToken() {
-        $headers = self::getAuthorizationHeader();
-        
-        if (!empty($headers)) {
-            if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
-                return $matches[1];
-            }
-        }
-        return null;
+    private static function base64UrlDecode($data) {
+        return base64_decode(strtr($data, '-_', '+/'));
     }
 }
-?>
