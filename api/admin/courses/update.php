@@ -1,4 +1,15 @@
 <?php
+// CORS
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Methods: PUT, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit();
+}
+
 require_once '../../../includes/functions.php';
 requireAdmin();
 
@@ -7,7 +18,6 @@ require_once '../../../includes/database.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
-// 🔒 Basic validation
 if (
     empty($data['id']) ||
     empty($data['title']) ||
@@ -23,19 +33,19 @@ $db = (new Database())->getConnection();
 
 $stmt = $db->prepare("
     UPDATE courses SET
-        course_code        = :course_code,
-        title              = :title,
-        slug               = :slug,
-        description        = :description,
-        short_description  = :short_description,
-        price              = :price,
-        discount_price     = :discount_price,
-        duration_days      = :duration_days,
-        total_hours        = :total_hours,
-        level              = :level,
-        is_featured        = :is_featured,
-        is_active          = :is_active,
-        updated_at         = NOW()
+        course_code       = :course_code,
+        title             = :title,
+        slug              = :slug,
+        description       = :description,
+        short_description = :short_description,
+        price             = :price,
+        discount_price    = :discount_price,
+        duration_days     = :duration_days,
+        total_hours       = :total_hours,
+        level             = :level,
+        is_featured       = :is_featured,
+        is_active         = :is_active,
+        updated_at        = NOW()
     WHERE id = :id
 ");
 
@@ -56,5 +66,6 @@ $stmt->execute([
 ]);
 
 echo json_encode([
+    "success" => true,
     "message" => "Course updated successfully"
 ]);

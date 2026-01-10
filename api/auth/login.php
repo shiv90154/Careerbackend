@@ -1,4 +1,19 @@
 <?php
+
+// ===== CORS HEADERS =====
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json");
+
+// ===== HANDLE PREFLIGHT =====
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// ===== YOUR EXISTING CODE =====
 require_once '../../includes/config.php';
 require_once '../../includes/database.php';
 require_once '../../includes/jwt.php';
@@ -30,7 +45,7 @@ $token = JWT::encode([
     "id"    => $user['id'],
     "role"  => $user['role'],
     "email" => $user['email'],
-    "exp"   => time() + (60 * 60 * 24) // 24 hours
+    "exp"   => time() + (60 * 60 * 24)
 ], JWT_SECRET);
 
 echo json_encode([

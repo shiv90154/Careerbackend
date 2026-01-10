@@ -1,6 +1,5 @@
 <?php
 class JWT {
-
     public static function encode($payload, $secret, $algo = 'HS256') {
         $header = json_encode(['typ' => 'JWT', 'alg' => $algo]);
         $payload = json_encode($payload);
@@ -47,3 +46,4 @@ class JWT {
         return base64_decode(strtr($data, '-_', '+/'));
     }
 }
+?>

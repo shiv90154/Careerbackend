@@ -193,3 +193,4 @@ function uploadFile($file, $folder)
 
     return $path;
 }
+?>

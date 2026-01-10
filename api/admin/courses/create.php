@@ -1,4 +1,15 @@
 <?php
+// CORS
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Methods: POST, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
+header("Content-Type: application/json");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit();
+}
+
 require_once '../../../includes/functions.php';
 requireAdmin();
 
@@ -7,7 +18,18 @@ require_once '../../../includes/database.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
 
+if (
+    empty($data['course_code']) ||
+    empty($data['title']) ||
+    empty($data['slug'])
+) {
+    http_response_code(422);
+    echo json_encode(["message" => "Required fields missing"]);
+    exit;
+}
+
 $db = (new Database())->getConnection();
+
 $stmt = $db->prepare("
   INSERT INTO courses 
   (course_code, title, slug, price, short_description) 
@@ -18,8 +40,12 @@ $stmt->execute([
   $data['course_code'],
   $data['title'],
   $data['slug'],
-  $data['price'],
-  $data['short_description']
+  $data['price'] ?? 0,
+  $data['short_description'] ?? ''
 ]);
 
-echo json_encode(["message" => "Course created"]);
+echo json_encode([
+    "success" => true,
+    "message" => "Course created"
+]);
+

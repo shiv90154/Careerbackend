@@ -1,15 +1,13 @@
 <?php
-
-// ===== CORS HEADERS =====
-header("Access-Control-Allow-Origin: http://localhost:5174");
-header("Access-Control-Allow-Credentials: true");
-header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Origin: http://localhost:5173");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization");
+header("Access-Control-Allow-Credentials: true");
 
-// Handle preflight
+// Handle preflight request
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
-    exit;
+    exit();
 }
 // Database Configuration
 define('DB_HOST', 'localhost');
@@ -22,7 +20,7 @@ define('JWT_SECRET', 'your-secret-key-here-change-in-production');
 define('JWT_ALGORITHM', 'HS256');
 
 // Application Configuration
-define('BASE_URL', 'http://localhost:5174');
+define('BASE_URL', 'http://localhost:5173');
 define('API_URL', BASE_URL . '/api');
 define('SITE_NAME', 'Career Path Institute - Shimla');
 
