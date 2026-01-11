@@ -1,4 +1,7 @@
 <?php
+// IMPORTANT: Prevent any unwanted output BEFORE headers
+ob_start();
+
 // Load environment variables
 if (file_exists(__DIR__ . '/../.env')) {
     $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -9,9 +12,16 @@ if (file_exists(__DIR__ . '/../.env')) {
     }
 }
 
-// Handle CORS first - SINGLE POINT OF CORS CONTROL
+// Handle CORS before ANY other output
 require_once __DIR__ . '/cors.php';
 CORSHandler::handleCORS();
+
+// Debug CORS in development (after APP_DEBUG is defined)
+if (defined('APP_DEBUG') && APP_DEBUG === 'true') {
+    error_log("CORS Debug - Origin: " . ($_SERVER['HTTP_ORIGIN'] ?? 'No origin'));
+    error_log("CORS Debug - Method: " . $_SERVER['REQUEST_METHOD']);
+    error_log("CORS Debug - Headers sent: " . (headers_sent() ? 'Yes' : 'No'));
+}
 
 // Database Configuration
 if (!defined('DB_HOST')) define('DB_HOST', $_ENV['DB_HOST'] ?? 'localhost');
@@ -56,7 +66,7 @@ if (!defined('RAZORPAY_KEY_SECRET')) define('RAZORPAY_KEY_SECRET', $_ENV['RAZORP
 if (!defined('RAZORPAY_WEBHOOK_SECRET')) define('RAZORPAY_WEBHOOK_SECRET', $_ENV['RAZORPAY_WEBHOOK_SECRET'] ?? '');
 
 // File Upload Configuration
-if (!defined('MAX_FILE_SIZE')) define('MAX_FILE_SIZE', $_ENV['MAX_FILE_SIZE'] ?? 10485760); // 10MB
+if (!defined('MAX_FILE_SIZE')) define('MAX_FILE_SIZE', $_ENV['MAX_FILE_SIZE'] ?? 10485760);
 if (!defined('ALLOWED_IMAGE_TYPES')) define('ALLOWED_IMAGE_TYPES', $_ENV['ALLOWED_IMAGE_TYPES'] ?? 'jpg,jpeg,png,gif,webp');
 if (!defined('ALLOWED_DOCUMENT_TYPES')) define('ALLOWED_DOCUMENT_TYPES', $_ENV['ALLOWED_DOCUMENT_TYPES'] ?? 'pdf,doc,docx,ppt,pptx');
 
@@ -67,7 +77,7 @@ if (!defined('LOG_FILE')) define('LOG_FILE', $_ENV['LOG_FILE'] ?? 'logs/app.log'
 // Timezone
 date_default_timezone_set('Asia/Kolkata');
 
-// Error Reporting (disable in production)
+// Error Reporting
 if (APP_DEBUG === 'true') {
     error_reporting(E_ALL);
     ini_set('display_errors', 1);
@@ -75,4 +85,6 @@ if (APP_DEBUG === 'true') {
     error_reporting(0);
     ini_set('display_errors', 0);
 }
-?>
+
+// Flush everything at the end
+ob_end_flush();

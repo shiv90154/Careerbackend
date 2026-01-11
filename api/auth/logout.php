@@ -1,57 +1,42 @@
 <?php
+// CORS Headers
+header("Access-Control-Allow-Origin: " . ($_SERVER["HTTP_ORIGIN"] ?? "http://localhost:5173"));
+header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, Accept, Origin");
+header("Access-Control-Allow-Credentials: true");
+if ($_SERVER['REQUEST_METHOD'] == 'OPTIONS') { http_response_code(200); exit(); }
 
-/**
- * User Logout API
- * Career Path Institute - Shimla
- */
 
 require_once '../../includes/config.php';
-require_once '../../includes/auth.php';
-require_once '../../includes/security.php';
 require_once '../../includes/response.php';
 require_once '../../includes/logger.php';
 
 try {
+    Logger::logRequest();
+    
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         ApiResponse::methodNotAllowed();
     }
     
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    if (!$input || !isset($input['csrf_token'])) {
-        ApiResponse::error('CSRF token required');
+    // Clear any server-side sessions if using them
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_destroy();
     }
     
-    SecurityManager::validateCSRFToken($input['csrf_token']);
-    
-    // Try to get user (but don't fail if not authenticated)
-    try {
-        $user = Auth::authenticate();
-        $userId = $user['id'];
-    } catch (Exception $e) {
-        $userId = null;
-    }
-    
-    // Clear session
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-    session_destroy();
-    
-    // Clear any authentication cookies
+    // Clear httpOnly cookies if using them
     if (isset($_COOKIE['auth_token'])) {
-        setcookie('auth_token', '', time() - 3600, '/', '', true, true);
+        setcookie('auth_token', '', time() - 3600, '/', '', false, true);
     }
     
-    Logger::info("User logged out", [
-        'user_id' => $userId,
-        'ip' => SecurityManager::getClientIP()
+    Logger::info('User logged out', [
+        'ip' => SecurityManager::getClientIP(),
+        'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
     ]);
     
-    ApiResponse::success(null, 'Logged out successfully');
+    ApiResponse::success([], 'Logged out successfully');
     
 } catch (Exception $e) {
     Logger::error("Logout error: " . $e->getMessage());
-    ApiResponse::serverError($e->getMessage());
+    ApiResponse::error('Logout failed: ' . $e->getMessage());
 }
 ?>

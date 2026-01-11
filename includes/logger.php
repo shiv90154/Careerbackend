@@ -1,56 +1,16 @@
 <?php
-require_once 'config.php';
 
 class Logger {
-    private static $logLevels = [
-        'DEBUG' => 0,
-        'INFO' => 1,
-        'WARNING' => 2,
-        'ERROR' => 3,
-        'CRITICAL' => 4
-    ];
+    private static $logFile;
     
-    private static function log($level, $message, $context = []) {
-        $currentLevel = self::$logLevels[LOG_LEVEL] ?? 1;
-        $messageLevel = self::$logLevels[$level] ?? 1;
+    public static function init() {
+        self::$logFile = __DIR__ . '/../logs/app.log';
         
-        if ($messageLevel < $currentLevel) {
-            return;
-        }
-        
-        $timestamp = date('Y-m-d H:i:s');
-        $ip = $_SERVER['REMOTE_ADDR'] ?? 'CLI';
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'CLI';
-        $requestUri = $_SERVER['REQUEST_URI'] ?? 'CLI';
-        
-        $logEntry = [
-            'timestamp' => $timestamp,
-            'level' => $level,
-            'message' => $message,
-            'ip' => $ip,
-            'user_agent' => $userAgent,
-            'request_uri' => $requestUri,
-            'context' => $context
-        ];
-        
-        $logLine = json_encode($logEntry) . PHP_EOL;
-        
-        // Ensure log directory exists
-        $logDir = dirname(LOG_FILE);
+        // Create logs directory if it doesn't exist
+        $logDir = dirname(self::$logFile);
         if (!is_dir($logDir)) {
             mkdir($logDir, 0755, true);
         }
-        
-        file_put_contents(LOG_FILE, $logLine, FILE_APPEND | LOCK_EX);
-        
-        // Also log to error_log for critical errors
-        if ($level === 'CRITICAL' || $level === 'ERROR') {
-            error_log("[$level] $message");
-        }
-    }
-    
-    public static function debug($message, $context = []) {
-        self::log('DEBUG', $message, $context);
     }
     
     public static function info($message, $context = []) {
@@ -69,7 +29,51 @@ class Logger {
         self::log('CRITICAL', $message, $context);
     }
     
-    public static function security($message, $context = []) {
-        self::log('CRITICAL', "[SECURITY] $message", $context);
+    public static function debug($message, $context = []) {
+        if (defined('APP_DEBUG') && APP_DEBUG === 'true') {
+            self::log('DEBUG', $message, $context);
+        }
+    }
+    
+    private static function log($level, $message, $context = []) {
+        if (!self::$logFile) {
+            self::init();
+        }
+        
+        $timestamp = date('Y-m-d H:i:s');
+        $contextStr = !empty($context) ? ' ' . json_encode($context) : '';
+        $logEntry = "[{$timestamp}] {$level}: {$message}{$contextStr}" . PHP_EOL;
+        
+        file_put_contents(self::$logFile, $logEntry, FILE_APPEND | LOCK_EX);
+        
+        // Also log to error_log in development
+        if (defined('APP_DEBUG') && APP_DEBUG === 'true') {
+            error_log("[{$level}] {$message}");
+        }
+    }
+    
+    public static function logRequest() {
+        $data = [
+            'method' => $_SERVER['REQUEST_METHOD'],
+            'uri' => $_SERVER['REQUEST_URI'],
+            'ip' => SecurityManager::getClientIP(),
+            'user_agent' => $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown'
+        ];
+        
+        self::info('API Request', $data);
+    }
+    
+    public static function logResponse($statusCode, $message = '') {
+        $data = [
+            'status_code' => $statusCode,
+            'message' => $message,
+            'execution_time' => microtime(true) - ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true))
+        ];
+        
+        self::info('API Response', $data);
     }
 }
+
+// Initialize logger
+Logger::init();
+?>

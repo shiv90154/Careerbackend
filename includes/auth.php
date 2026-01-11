@@ -48,7 +48,7 @@ class Auth {
      * Get user data from decoded token
      */
     private static function getUserFromToken($decoded) {
-        $db = Database::getInstance()->getConnection();
+        $db = (new Database())->getConnection();
         
         $query = "
             SELECT id, full_name, email, role, is_active, email_verified, last_login
@@ -136,7 +136,7 @@ class Auth {
         $token = SecurityManager::generateSecureToken(32);
         $expires = date('Y-m-d H:i:s', time() + 3600); // 1 hour
         
-        $db = Database::getInstance()->getConnection();
+        $db = (new Database())->getConnection();
         
         $query = "
             UPDATE users 
@@ -154,7 +154,7 @@ class Auth {
      * Verify password reset token
      */
     public static function verifyPasswordResetToken($token) {
-        $db = Database::getInstance()->getConnection();
+        $db = (new Database())->getConnection();
         
         $query = "
             SELECT id, email, full_name
@@ -174,7 +174,7 @@ class Auth {
      * Clear password reset token
      */
     public static function clearPasswordResetToken($userId) {
-        $db = Database::getInstance()->getConnection();
+        $db = (new Database())->getConnection();
         
         $query = "
             UPDATE users 
