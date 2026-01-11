@@ -10,11 +10,17 @@ $db = (new Database())->getConnection();
   - price + discount
   - average rating
   - enrolled students count
+  - supports featured filter and limit
 */
-$stmt = $db->query("
+
+// Get query parameters
+$featured = isset($_GET['featured']) ? filter_var($_GET['featured'], FILTER_VALIDATE_BOOLEAN) : null;
+$limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+
+// Build the query
+$sql = "
     SELECT 
         c.id,
-        c.course_code,
         c.title,
         c.slug,
         c.short_description,
@@ -30,14 +36,24 @@ $stmt = $db->query("
          WHERE e.course_id = c.id) AS total_students,
 
         -- average rating
-        (SELECT ROUND(AVG(r.rating),1)
-         FROM course_reviews r
-         WHERE r.course_id = c.id AND r.is_approved = 1) AS avg_rating
+        c.rating_avg AS avg_rating
 
     FROM courses c
-    WHERE c.is_active = 1
-    ORDER BY c.is_featured DESC, c.created_at DESC
-");
+    WHERE c.status = 'published'";
+
+// Add featured filter if specified
+if ($featured !== null) {
+    $sql .= " AND c.is_featured = " . ($featured ? '1' : '0');
+}
+
+$sql .= " ORDER BY c.is_featured DESC, c.created_at DESC";
+
+// Add limit if specified
+if ($limit !== null && $limit > 0) {
+    $sql .= " LIMIT " . $limit;
+}
+
+$stmt = $db->query($sql);
 
 $courses = $stmt->fetchAll();
 

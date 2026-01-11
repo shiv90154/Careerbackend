@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; }
+        .success { color: green; }
+        .error { color: red; }
+        .loading { color: blue; }
+    </style>
+</head>
+<body>
+    <h1>Frontend API Test</h1>
+    
+    <div id="courses-test" class="test-section">
+        <h3>Courses API Test</h3>
+        <div id="courses-result" class="loading">Loading...</div>
+    </div>
+    
+    <div id="tests-test" class="test-section">
+        <h3>Tests API Test</h3>
+        <div id="tests-result" class="loading">Loading...</div>
+    </div>
+    
+    <div id="current-affairs-test" class="test-section">
+        <h3>Current Affairs API Test</h3>
+        <div id="current-affairs-result" class="loading">Loading...</div>
+    </div>
+    
+    <div id="blogs-test" class="test-section">
+        <h3>Blogs API Test</h3>
+        <div id="blogs-result" class="loading">Loading...</div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost/career-path-api/api';
+        
+        async function testAPI(endpoint, resultElementId, dataKey) {
+            const resultElement = document.getElementById(resultElementId);
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data[dataKey]) {
+                    resultElement.innerHTML = `<span class="success">✅ Success: ${data[dataKey].length} items loaded</span>`;
+                    console.log(`${dataKey} data:`, data[dataKey]);
+                } else {
+                    resultElement.innerHTML = `<span class="error">❌ Unexpected response structure</span>`;
+                    console.log(`${dataKey} response:`, data);
+                }
+                
+            } catch (error) {
+                resultElement.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                console.error(`${dataKey} error:`, error);
+            }
+        }
+        
+        // Test all APIs
+        testAPI('/courses/index.php', 'courses-result', 'courses');
+        testAPI('/tests/index.php', 'tests-result', 'tests');
+        testAPI('/current-affairs/index.php', 'current-affairs-result', 'current_affairs');
+        testAPI('/blogs/index.php', 'blogs-result', 'blogs');
+    </script>
+</body>
+</html>

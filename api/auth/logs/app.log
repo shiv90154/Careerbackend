@@ -1,0 +1,1 @@
+{"timestamp":"2026-01-11 13:30:06","level":"INFO","message":"API Success Response","ip":"::1","user_agent":"CLI","request_uri":"\/career-path-api\/api\/auth\/csrf-token.php","context":{"status_code":200,"message":"CSRF token generated","data_type":"array"}}

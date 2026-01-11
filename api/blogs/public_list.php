@@ -1,4 +1,5 @@
 <?php
+
 require_once '../../includes/database.php';
 
 $db = (new Database())->getConnection();
